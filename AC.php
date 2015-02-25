@@ -57,7 +57,25 @@ class AC
 
     protected function _getLetter ($word, $index = 0)
     {
-        return mb_substr ($word, $index, 1, 'utf8');
+        if ($index >= strlen ($word)) return false;
+        $msb = ord ($word{$index});
+        switch (true) {
+        case 0xFC == ($msb & 0xFC):
+            return substr ($word, ($index += 6) - 6, 6); 
+        case 0xF8 == ($msb & 0xF8):
+            return substr ($word, ($index += 5) - 5, 5); 
+        case 0xF0 == ($msb & 0xF0):
+            return substr ($word, ($index += 4) - 4, 4); 
+        case 0xE0 == ($msb & 0xE0):
+            return substr ($word, ($index += 3) - 3, 3); 
+        case 0xC0 == ($msb & 0xC0):
+            return substr ($word, ($index += 2) - 2, 2); 
+        case !($msb & 0x80):
+            return $word{$index++};
+        default:
+            throw new \Exception ('Invalid UTF8 encoding.');
+        }         
+        //return mb_substr ($word, $index, 1, 'utf8');
     }
 
     protected function _enQueue (&$queue, $node)
@@ -76,7 +94,7 @@ class AC
         if (!empty ($word)) {
             $currentNode = $this->_trieRoot;
             $index       = 0;
-            while ($letter = $this -> _getLetter ($word, $index++)) {
+            while (false !== ($letter = $this -> _getLetter ($word, $index))) {
                 if (!isset ($currentNode->children[$letter])) {
                     $currentNode->children[$letter] = new TrieNode ($currentNode, $letter);
                 }
@@ -133,7 +151,7 @@ class AC
         $index = 0;
         $wordsMatched = array ();
         $currentNode = $this->_trieRoot;
-        while ('' !== ($letter = $this -> _getLetter ($haystack, $index++))) {
+        while (false !== ($letter = $this -> _getLetter ($haystack, $index))) {
             while ($currentNode->parent && !isset ($currentNode->children[$letter])) {
                 $currentNode = $currentNode->failChain;
             }
