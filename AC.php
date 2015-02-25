@@ -134,14 +134,12 @@ class AC
         $wordsMatched = array ();
         $currentNode = $this->_trieRoot;
         while ($letter = $this -> _getLetter ($haystack, $index++)) {
-            if (isset ($currentNode->children[$letter])) {
-                $currentNode = $currentNode->children[$letter];
-            } else {
-                while ($currentNode->parent && !isset ($currentNode->children[$letter])) {
-                    $currentNode = $currentNode->failChain;
-                }
+            while ($currentNode->parent && !isset ($currentNode->children[$letter])) {
                 $currentNode = $currentNode->failChain;
             }
+            if (isset ($currentNode->children[$letter])) {
+                $currentNode = $currentNode->children[$letter];
+            }            
             if (TrieNode :: TYPE_TERM == $currentNode->type) {
                 $wordsMatched[] = array ($index - 1 => $currentNode->wordList);
             }
