@@ -104,6 +104,7 @@ class AC
                 $QNode->failChain = $parent->failChain->children[$QNode->value];
             }
             if (TrieNode :: TYPE_TERM == $QNode->failChain->type) {
+                $QNode->type = TrieNode :: TYPE_TERM;
                 foreach ($QNode->failChain->wordList as $_word) { 
                     $QNode->addRefWord ($_word);
                 }
