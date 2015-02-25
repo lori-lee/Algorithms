@@ -133,7 +133,7 @@ class AC
         $index = 0;
         $wordsMatched = array ();
         $currentNode = $this->_trieRoot;
-        while ($letter = $this -> _getLetter ($haystack, $index++)) {
+        while ('' !== ($letter = $this -> _getLetter ($haystack, $index++))) {
             while ($currentNode->parent && !isset ($currentNode->children[$letter])) {
                 $currentNode = $currentNode->failChain;
             }
