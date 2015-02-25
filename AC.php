@@ -57,7 +57,7 @@ class AC
 
     protected function _getLetter ($word, $index = 0)
     {
-        return mb_substr ($word, $index, 1);
+        return mb_substr ($word, $index, 1, 'utf8');
     }
 
     protected function _enQueue (&$queue, $node)
