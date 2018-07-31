@@ -9,6 +9,7 @@
  **/
 use Form\Util;
 use QR\DebugProfiler;
+use QR\Xngine\Tokenizer;
 
 class SimpleFileFormatParser
 {
@@ -132,7 +133,11 @@ class SimpleFileFormatParser
             }
         }
         DebugProfiler :: end();
-        return implode($newLine, $rowResult);
+        if(!is_array($rowResult[0])) {
+            return implode($newLine, $rowResult);
+        } else {
+            return implode($separator, $rowResult[0]);
+        }
     }
 
     static public function split2Char($input, $encoding = 'UTF-8')
@@ -154,5 +159,64 @@ class SimpleFileFormatParser
             $i += $n;
         }
         return $chars;
+    }
+
+    static private function __addWord(array &$words, &$word)
+    {
+        if(!empty($word)) {
+            $words[] = $word;
+            $word    = '';
+        }
+    }
+
+    static public function isCJKC($c, $encoding = 'UTF-8')
+    {
+        if(strlen($c) > 1) {
+            $_c = static :: split2Char($c, $encoding);
+            $c  = $_c[0];
+            $l  = strlen($c);
+            $ord= ord($c{0}) & ((1 << (~$l & 0x7)) - 1);
+            for($i = 1; $i < $l; ++$i) {
+                $ord = ($ord << 6) | (ord($c{$i}) & 0x3F);
+            }
+            return 0x4E00 <= $ord && $ord <= 0x9FFF;
+        } else {
+            return false;
+        }
+    }
+
+    static public function isPunctuation($c)
+    {
+        if(strlen($c) == 1) {
+            $dec = ord($c);
+            return (0x21 <= $dec && $dec <= 0x2F)
+                || (0x3A <= $dec && $dec <= 0x40)
+                || (0x5B <= $dec && $dec <= 0x60)
+                || (0x7B <= $dec && $dec <= 0x7E);
+        }
+        return false;
+    }
+
+    static public function split2Word($input, $encoding = 'UTF-8', $reserverBlank = true)
+    {
+        $words = [];
+        $chars = static :: split2Char($input, $encoding);
+        $prevWord = '';
+        for($i = 0, $len = count($chars); $i < $len; ++$i) {
+            $c = $chars{$i};
+            if(Tokenizer :: isBlank($c)) {
+                static :: __addWord($words, $prevWord);
+                if($reserverBlank && $i && !Tokenizer :: isBlank($chars{$i - 1})) {
+                    static :: __addWord($words, $c);
+                }
+            } elseif(static :: isCJKC($c) || static :: isPunctuation($c)) {
+                static :: __addWord($words, $prevWord);
+                static :: __addWord($words, $c);
+            } else {
+                $prevWord .= $c;
+            }
+        }
+        static :: __addWord($words, $prevWord);
+        return $words;
     }
 }
