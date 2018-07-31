@@ -59,11 +59,16 @@ class DiffEngine
         return $array;
     }
 
-    static public function diff($stringA, $stringB, $encoding = 'UTF-8', $prefix = '<span style="color:red;font-weight:700;">', $suffix = '</span>')
+    static public function diff($stringA, $stringB, $spliter = null, $equalCmp = null, $encoding = 'UTF-8', $prefix = '<span style="color:red;font-weight:700;">', $suffix = '</span>')
     {
         DebugProfiler :: start();
-        $arrayA = static :: split2Word($stringA, $encoding);
-        $arrayB = static :: split2Word($stringB, $encoding);
+        if(is_callable($spliter)) {
+            $arrayA = call_user_func($spliter, $stringA, $encoding);
+            $arrayB = call_user_func($spliter, $stringB, $encoding);
+        } else {
+            $arrayA = static :: split2Word($stringA, $encoding);
+            $arrayB = static :: split2Word($stringB, $encoding);
+        }
         $maxCommonLen  = []; 
         $commonCharPos = []; 
         for($i = count($arrayA), $j = count($arrayB); $i >= 0; --$i) {
@@ -81,7 +86,12 @@ class DiffEngine
                 $key  = $i . ',' . $j; 
                 $key2 = ($i + 1) . ',' . $j; 
                 $key3 = $i . ',' . ($j + 1); 
-                if($arrayA[$i] == $arrayB[$j]) {
+                if(is_callable($equalCmp)) {
+                    $r = call_user_func($equalCmp, $arrayA[$i], $arrayB[$j]);
+                } else {
+                    $r = ($arrayA[$i] == $arrayB[$j]);
+                }
+                if($r) {
                     $key1 = ($i + 1) . ',' . ($j + 1); 
                     $maxCommonLen[$key] = 1 + $maxCommonLen[$key1];
                     $commonCharPos[$key]= [[$i, $j], [$i + 1, $j + 1]];
