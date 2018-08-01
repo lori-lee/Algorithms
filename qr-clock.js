@@ -3,6 +3,36 @@
  * @Author: lori@flashbay.com
  *
  **/
+/**
+用法：
+<script src="qr-clock.js"></script>
+<style>
+.svg-clock {
+    height: 100px;
+    width: 400px;
+}
+</style>
+<div class="svg-clock" id="svg-clock-1"></div>
+<div class="svg-clock" id="svg-clock-2"></div>
+<div class="svg-clock" id="svg-clock-3"></div>
+<div class="svg-clock" id="svg-clock-4"></div>
+<script type="text/javascript">
+var targetDOM1 = document.querySelector('#svg-clock-1');
+var targetDOM2 = document.querySelector('#svg-clock-2');
+var targetDOM3 = document.querySelector('#svg-clock-3');
+var targetDOM4 = document.querySelector('#svg-clock-4');
+var clock1 = new QRLCDClock(targetDOM1, 0x7);
+var clock2 = new QRLCDClock(targetDOM2, 0x7, 13, 42);
+var clock3 = new QRLCDClock(targetDOM3, 0x7, 0, 30, 05);
+var clock4 = new QRLCDClock(targetDOM4, 0x6);
+clock1.run();
+clock2.run();
+clock3.set24HourMode(false)
+      .setCountdown(true);
+clock3.run();
+clock4.run();
+</script>
+   **/
 var QRLCDClock = null;
 +function($, window) {
     'use strict';
