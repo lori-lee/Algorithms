@@ -136,6 +136,28 @@ abstract class SyntaxTree
         return $this;
     }
 
+    public function levelOrderTraverse(callable $callbackOnNode = null, &$param = null)
+    {
+        if($this->_root) {
+            $queue = [$this->_root];
+            while(!empty($queue)) {
+                $currentNode = array_shift($queue);
+                if(is_callable($callbackOnNode)) {
+                    $callbackOnNode($currentNode, $param);
+                }
+                $left = $currentNode->getLeft();
+                $right= $currentNode->getRight();
+                if($left) {
+                    $queue[] = $left;
+                }
+                if($right) {
+                    $queue[] = $right;
+                }
+            }
+        }
+        return $this;
+    }
+
     public function existCycle()
     {
         if(!$this->_root) {
