@@ -42,6 +42,9 @@ class NodeFunction
     const FUNC_NOT_NULL = 0x20;
     const FUNC_UNIQUE = 0x21;//unique
     const FUNC_FILTER = 0x22;//filter
+    const FUNC_AVERAGE= 0x23;//average
+    const FUNC_SET_CACHE  = 0x24;//set_cache(index start from 0)
+    const FUNC_GET_CACHE  = 0x25;//get_cache(index start from 0)
     //
     static private $_funcMap = [
         '', 'not', 'ceiling', 'floor', 'intval', 'decimal', 'sign',
@@ -51,16 +54,24 @@ class NodeFunction
         'first_key', 'first_val', 'last_key', 'last_val',
         'escape_html_entity_decode', 'is_null', 'not_null',
         'unique', 'filter',
+        'average', 'set_cache', 'get_cache',
     ];
+
+    static private $_runCache = [];
+    //
+    static public function reset()
+    {
+        static :: $_runCache = [];
+    }
 
     static public function getFunctionList()
     {
-        return range(0, 0x22);
+        return range(0, 0x25);
     }
 
     static public function isFunctionValid($function)
     {
-        return 0 <= $function && $function <= 0x22;
+        return 0 <= $function && $function <= 0x25;
     }
 
     static public function getFunctionTxt($function)
@@ -364,6 +375,22 @@ class NodeFunction
             } else {
                 $value = empty($value) ? null : $value;
             }
+            break;
+        case static :: FUNC_AVERAGE:
+            $value = (array)$value;
+            $value = !empty($value) ? array_sum($value) / count($value) : 0;
+            break;
+        case static :: FUNC_SET_CACHE:
+            static :: $_runCache[] = $value;
+            break;
+        case static :: FUNC_GET_CACHE:
+            if(!is_numeric($value)) {
+                throw new \Exception(sprintf('Invalid parameter for get_cache(int): %s',
+                    Util :: strVal($value))
+                );
+            }
+            $value = intval($value);
+            $value = isset(static :: $_runCache[$value]) ? static :: $_runCache[$value] : null;
             break;
         }
         return $value;
