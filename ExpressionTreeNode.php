@@ -16,6 +16,8 @@ use QR\DebugProfiler;
  **/
 class ExpressionTreeNode extends SyntaxTreeNode
 {
+    const LEFT_CHILD  = 0x1;
+    const RIGHT_CHILD = 0x2;
     static public function nodeEval(SyntaxTreeNode $node, $dryrun = false)
     {
         DebugProfiler :: start();
@@ -111,13 +113,14 @@ class ExpressionTreeNode extends SyntaxTreeNode
                 Util :: strVal($rValueInfo[3])
             );
         }
+        $node->value0 = $node->value;
         if($functionNO) {
             if(!$dryrun) {
                 $node->value = NodeFunction :: doFunc($functionNO, $node->value);
             } else {
                 $node->value = '';
             }
-            $noNeedBrackPair = !empty($node->valueTxt) && '(' == $node->valueTxt{0} && ')' == $node->valueTxt{strlen($node->valueTxt) - 1};
+            $noNeedBrackPair = $node->valueTxt && '(' == $node->valueTxt{0} && ')' == $node->valueTxt{strlen($node->valueTxt) - 1};
             $pattern = $noNeedBrackPair ? '%s%s' : '%s(%s)';
             $node->valueTxt  = sprintf($pattern, Util :: strVal(NodeFunction :: getFunctionTxt($functionNO)), $node->valueTxt);
             $node->valueTxtZ = sprintf($pattern, Util :: strVal(NodeFunction :: getFunctionTxt($functionNO)), $node->valueTxtZ);
@@ -157,6 +160,75 @@ class ExpressionTreeNode extends SyntaxTreeNode
         $nodeDAO->root_id = $rootNode->getNodeInfo('id');
         $nodeDAO->store();
         $node->setNodeInfo('id', $nodeDAO->id);
+    }
+
+    static public function nodeLevelOrderEval(ExpressionTreeNode $node, &$traverseResult)
+    {
+        static $lastLevel, $lastIndex;
+        $parent = $node->getParent();
+        $currentLevel = -1;
+        $parentKey = null;
+        if(empty($parent)) {
+            $traverseResult = [];
+            $lastLevel      = 0;
+            $currentLevel   = 0;
+            $lastIndex      = -1;
+        } else {
+            $parentKey    = spl_object_hash($parent);
+            $currentLevel = $traverseResult[$parentKey]['level'] + 1;
+        }
+        $operatorTxt = null;
+        $valueTxt = Util :: strVal($node->value0);
+        if($node->getType() === static :: TYPE_LEAF) {
+            if($name = $node->getNodeInfo('name')) {
+                $valueTxt = sprintf('%s = %s', $name, $valueTxt);
+            }
+        } else {
+            $operatorTxt = SyntaxOperator :: getOperatorTxt($node->getOperation());
+        }
+        $functionTxt = '';
+        if($functionNO = $node->getNodeInfo('function')) {
+            $valueTxt = sprintf('%s = %s(%s)',
+                Util :: strVal($node->value),
+                $functionTxt = NodeFunction :: getFunctionTxt($functionNO),
+                $valueTxt
+            );
+        }
+        $key = spl_object_hash($node);
+        if($lastLevel != $currentLevel) {
+            $lastIndex = 0;
+            $lastLevel = $currentLevel; 
+        } else {
+            ++$lastIndex;
+        }
+        $traverseResult[$key] = [
+            'key'         => $key,
+            'level'       => $currentLevel,
+            'parentKey'   => $parentKey,
+            'idxParent'   => $traverseResult[$parentKey]['index'],
+            'value0'      => $node->value0,
+            'value'       => $node->value,
+            'valueTxt'    => $valueTxt,
+            'function'    => $functionTxt,
+            'operatorTxt' => $operatorTxt,
+            'left'        => null,
+            'right'       => null,
+            'lrOrder'     => null,
+            'index'       => $lastIndex,
+        ];
+        if(!empty($parentKey)) {
+            $parent = &$traverseResult[$parentKey];
+            if(null == $parent['left']) {
+                $parent['left']    = $key;
+                $parent['idxLeft'] = $lastIndex;
+                $traverseResult[$key]['lrOrder'] = static :: LEFT_CHILD;
+            } else {
+                $parent['right']    = $key;
+                $parent['idxRight'] = $lastIndex;
+                $traverseResult[$key]['lrOrder'] = static :: RIGHT_CHILD;
+            }
+        }
+        return $traverseResult;
     }
     /**
      * See class SyntaxOperator
