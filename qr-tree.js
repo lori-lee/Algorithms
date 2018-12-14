@@ -1,6 +1,6 @@
 /**
  *
- * @Author: lori@flashbay.com
+ * @Author: Lori Lee
  *
  * @WARNING: NEVER change below codes unless you are clear what you are doing.
  *
